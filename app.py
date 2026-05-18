@@ -28,7 +28,9 @@ def api_paris():
     ]
 
     return jsonify(result)
-
+@app.route("/graphique")
+def GraphiqueAPI():
+    return render_template('graphique.html')
 
 
 
