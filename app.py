@@ -32,6 +32,10 @@ def api_paris():
 def GraphiqueAPI():
     return render_template('graphique.html')
 
+@app.route("/histogramme")
+def GraphiqueAPI():
+    return render_template('histogramme.html')
+
 
 
 # Ne rien mettre après ce commentaire
