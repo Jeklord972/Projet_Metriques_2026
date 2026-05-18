@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Atelier — Humidité Versailles</title>
+
   <script src="https://www.gstatic.com/charts/loader.js"></script>
 
   <style>
@@ -18,42 +19,37 @@
     .container {
       max-width: 1000px;
       margin: auto;
-      background: rgba(255,255,255,0.12);
+      background: rgba(255, 255, 255, 0.12);
       border-radius: 20px;
       padding: 30px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.4);
     }
 
-    h1 {
-      margin-top: 0;
+    h1, p {
       text-align: center;
-    }
-
-    p {
-      text-align: center;
-      font-size: 18px;
     }
 
     #chart {
       width: 100%;
-      height: 420px;
-      display: flex;
-      justify-content: center;
+      height: 450px;
+      margin-top: 30px;
     }
 
     #status {
       text-align: center;
       margin-top: 20px;
+      font-weight: bold;
     }
   </style>
 </head>
+
 <body>
   <div class="container">
-    <h1>Tableau de bord météo</h1>
-    <p>Indicateur personnalisé : humidité prévue à Versailles</p>
+    <h1>Atelier météo personnalisé</h1>
+    <p>Indicateur : humidité prévue à Versailles</p>
 
     <div id="chart"></div>
-    <div id="status"></div>
+    <div id="status">Chargement des données...</div>
   </div>
 
   <script>
@@ -61,35 +57,56 @@
     google.charts.setOnLoadCallback(init);
 
     async function init() {
-      const res = await fetch('/atelier-data');
-      const json = await res.json();
+      try {
+        const response = await fetch('/atelier-data');
 
-      const rows = [['Heure', 'Humidité']];
+        if (!response.ok) {
+          throw new Error("Erreur HTTP " + response.status);
+        }
 
-      json.forEach(p => {
-        const hour = p.datetime.split('T')[1];
-        rows.push([hour, Number(p.humidity)]);
-      });
+        const json = await response.json();
 
-      const data = google.visualization.arrayToDataTable(rows);
+        if (!json.length) {
+          throw new Error("Aucune donnée reçue depuis /atelier-data");
+        }
 
-      const options = {
-        width: 900,
-        height: 400,
-        redFrom: 80,
-        redTo: 100,
-        yellowFrom: 60,
-        yellowTo: 80,
-        greenFrom: 30,
-        greenTo: 60,
-        minorTicks: 5,
-        max: 100
-      };
+        const rows = [['Heure', 'Humidité']];
 
-      const chart = new google.visualization.Gauge(document.getElementById('chart'));
-      chart.draw(data, options);
+        json.forEach(item => {
+          const heure = item.datetime.split('T')[1];
+          const humidite = Number(item.humidity);
 
-      document.getElementById('status').textContent = "Données chargées depuis /atelier-data";
+          if (!isNaN(humidite)) {
+            rows.push([heure, humidite]);
+          }
+        });
+
+        const data = google.visualization.arrayToDataTable(rows);
+
+        const options = {
+          width: 900,
+          height: 400,
+          min: 0,
+          max: 100,
+          greenFrom: 30,
+          greenTo: 60,
+          yellowFrom: 60,
+          yellowTo: 80,
+          redFrom: 80,
+          redTo: 100,
+          minorTicks: 5
+        };
+
+        const chart = new google.visualization.Gauge(document.getElementById('chart'));
+        chart.draw(data, options);
+
+        document.getElementById('status').textContent =
+          "OK — " + (rows.length - 1) + " mesures d'humidité chargées depuis /atelier-data";
+
+      } catch (error) {
+        document.getElementById('status').textContent = "Erreur : " + error.message;
+        console.error(error);
+      }
     }
   </script>
 </body>
