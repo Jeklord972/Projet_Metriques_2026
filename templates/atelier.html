@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <title>Atelier — Humidité Versailles</title>
+  <title>Atelier météo — Humidité Versailles</title>
 
   <script src="https://www.gstatic.com/charts/loader.js"></script>
 
@@ -25,14 +25,24 @@
       box-shadow: 0 20px 40px rgba(0,0,0,0.4);
     }
 
-    h1, p {
+    h1 {
       text-align: center;
+      margin-bottom: 10px;
+    }
+
+    p {
+      text-align: center;
+      font-size: 18px;
+      margin-bottom: 30px;
     }
 
     #chart {
       width: 100%;
-      height: 450px;
-      margin-top: 30px;
+      height: 500px;
+      background: white;
+      border-radius: 16px;
+      padding: 15px;
+      box-sizing: border-box;
     }
 
     #status {
@@ -46,14 +56,14 @@
 <body>
   <div class="container">
     <h1>Atelier météo personnalisé</h1>
-    <p>Indicateur : humidité prévue à Versailles</p>
+    <p>Répartition de l'humidité prévue à Versailles sur les 7 prochains jours</p>
 
     <div id="chart"></div>
     <div id="status">Chargement des données...</div>
   </div>
 
   <script>
-    google.charts.load('current', { packages: ['gauge'] });
+    google.charts.load('current', { packages: ['corechart'] });
     google.charts.setOnLoadCallback(init);
 
     async function init() {
@@ -66,45 +76,41 @@
 
         const json = await response.json();
 
-        if (!json.length) {
-          throw new Error("Aucune donnée reçue depuis /atelier-data");
+        if (json.error) {
+          throw new Error(json.error);
         }
 
-        const rows = [['Heure', 'Humidité']];
+        const rows = [
+          ['Catégorie', 'Nombre de mesures']
+        ];
 
         json.forEach(item => {
-          const heure = item.datetime.split('T')[1];
-          const humidite = Number(item.humidity);
-
-          if (!isNaN(humidite)) {
-            rows.push([heure, humidite]);
-          }
+          rows.push([item.categorie, Number(item.valeur)]);
         });
 
         const data = google.visualization.arrayToDataTable(rows);
 
         const options = {
-          width: 900,
-          height: 400,
-          min: 0,
-          max: 100,
-          greenFrom: 30,
-          greenTo: 60,
-          yellowFrom: 60,
-          yellowTo: 80,
-          redFrom: 80,
-          redTo: 100,
-          minorTicks: 5
+          title: "Répartition de l'humidité à Versailles",
+          pieHole: 0.4,
+          legend: {
+            position: 'bottom'
+          },
+          chartArea: {
+            width: '90%',
+            height: '75%'
+          }
         };
 
-        const chart = new google.visualization.Gauge(document.getElementById('chart'));
+        const chart = new google.visualization.PieChart(document.getElementById('chart'));
         chart.draw(data, options);
 
         document.getElementById('status').textContent =
-          "OK — " + (rows.length - 1) + " mesures d'humidité chargées depuis /atelier-data";
+          "OK — données chargées depuis /atelier-data";
 
       } catch (error) {
-        document.getElementById('status').textContent = "Erreur : " + error.message;
+        document.getElementById('status').textContent =
+          "Erreur : " + error.message;
         console.error(error);
       }
     }

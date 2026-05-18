@@ -46,27 +46,44 @@ def api_atelier_data():
         "&timezone=Europe%2FParis"
     )
 
-    response = requests.get(url)
-    data = response.json()
+    try:
+        response = requests.get(url, timeout=10)
+        data = response.json()
 
-    times = data.get("hourly", {}).get("time", [])
-    humidities = data.get("hourly", {}).get("relative_humidity_2m", [])
+        humidities = data.get("hourly", {}).get("relative_humidity_2m", [])
 
-    result = []
+        faible = 0
+        moyenne = 0
+        forte = 0
 
-    for time, humidity in zip(times[:8], humidities[:8]):
-        if humidity is not None:
-            result.append({
-                "datetime": time,
-                "humidity": humidity
-            })
+        for humidity in humidities:
+            if humidity is None:
+                continue
 
-    return jsonify(result)
+            if humidity < 40:
+                faible += 1
+            elif humidity < 70:
+                moyenne += 1
+            else:
+                forte += 1
+
+        result = [
+            {"categorie": "Humidité faible < 40%", "valeur": faible},
+            {"categorie": "Humidité moyenne 40-70%", "valeur": moyenne},
+            {"categorie": "Humidité forte > 70%", "valeur": forte}
+        ]
+
+        return jsonify(result)
+
+    except Exception as error:
+        return jsonify({
+            "error": str(error)
+        }), 500
+
 
 @app.route("/atelier")
 def atelier():
     return render_template("atelier.html")
-
 
 # Ne rien mettre après ce commentaire
     
