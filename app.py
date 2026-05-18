@@ -63,7 +63,9 @@ def api_atelier_data():
 
     return jsonify(result)
 
-
+@app.route("/atelier")
+def atelier():
+    return render_template("atelier.html")
 
 
 # Ne rien mettre après ce commentaire
